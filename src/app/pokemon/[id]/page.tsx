@@ -115,6 +115,7 @@ const PokemonDetails = () => {
         return (
           <a
             href={data}
+            target="_blank"
             className="hover:text-blue-800 cursor-pointer text-blue-600 break-words block max-w-xs md:max-w-md"
           >
             {data}
