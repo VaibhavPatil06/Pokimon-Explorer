@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -15,44 +15,53 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const loader = useRef<HTMLDivElement>(null);
 
+  const fetchPokemons = useCallback(async () => {
+    if (loading) return; 
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://pokeapi.co/api/v2/pokemon?limit=20&offset=${offset}`
+      );
+      const data = await response.json();
+
+      setPokemons((prev) => {
+        const newPokemons = data.results.filter(
+          (newPokemon: Pokemon) =>
+            !prev.some((pokemon) => pokemon.name === newPokemon.name)
+        );
+        return [...prev, ...newPokemons];
+      });
+
+      setOffset((prev) => prev + 20); 
+    } catch (error) {
+      console.error("Error fetching Pokémon:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [offset, loading]); 
+
   useEffect(() => {
     fetchPokemons();
   }, []);
 
-  const fetchPokemons = async () => {
-    setLoading(true);
-    const response = await fetch(
-      `https://pokeapi.co/api/v2/pokemon?limit=20&offset=${offset}`
-    );
-    const data = await response.json();
-
-    setPokemons((prev) => {
-      const newPokemons = data.results.filter(
-        (newPokemon: Pokemon) =>
-          !prev.some((pokemon) => pokemon.name === newPokemon.name)
-      );
-      return [...prev, ...newPokemons];
-    });
-
-    setOffset((prev) => prev + 20);
-    setLoading(false);
-  };
-
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        fetchPokemons();
+      if (entries[0].isIntersecting && !loading) {
+        fetchPokemons(); 
       }
     });
+
     if (loader.current) {
       observer.observe(loader.current);
     }
+
     return () => observer.disconnect();
-  }, [loader]);
+  }, [fetchPokemons]); 
 
   const getPokemonId = (url: string) => {
     const parts = url.split("/");
-    return parts[parts.length - 2]; // Extract Pokémon ID from URL
+    return parts[parts.length - 2]; 
   };
 
   const filteredPokemons = search
